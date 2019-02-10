@@ -30,24 +30,12 @@
     </a-row>
     <a-row>
       <a-col :span="24">
-        <div id="c1"></div>
+        <div id="cal" style="width: 100%;height:200px;"></div>
       </a-col>
     </a-row>
     <a-row>
       <a-col :span="24">
-        <a-calendar @select="select">
-          <template slot="dateCellRender" slot-scope="value">
-            <a-list size="small" bordered :dataSource="getListData(value)">
-              <a-list-item slot="renderItem" slot-scope="item, index">{{item}}</a-list-item>
-            </a-list>
-          </template>
-          <template slot="monthCellRender" slot-scope="value">
-            <div v-if="getMonthData(value)" class="notes-month">
-              <section>{{getMonthData(value)}}</section>
-              <span>Backlog number</span>
-            </div>
-          </template>
-        </a-calendar>
+        <div id="detail" style="width: 100%;height:350px;"></div>
       </a-col>
     </a-row>
   </div>
@@ -60,67 +48,162 @@ import "moment/locale/zh-cn";
 moment.locale("zh-cn");
 import * as Util from "./util";
 
-import G2 from "@antv/g2";
+let echarts = require("echarts");
+let now = moment().format("YYYY-MM-DD");
 
-const data = [
-  { genre: "Sports", sold: 275 },
-  { genre: "Strategy", sold: 115 },
-  { genre: "Action", sold: 120 },
-  { genre: "Shooter", sold: 350 },
-  { genre: "Other", sold: 150 }
-];
+let visualMap = {
+  type: "continuous",
+  show: true,
+  orient: "horizontal",
+  left: "left",
+  top: 0,
+  min: 0,
+  max: 100,
+  inRange: {
+    color: ["#ADE0FF", "#0150B3"]
+  }
+};
+
+let calendar = {
+  left: 40,
+  range: moment().year(),
+  cellSize: 20,
+  dayLabel: {
+    firstDay: 1, // 从周一开始
+    nameMap: "cn"
+  },
+  monthLabel: {
+    nameMap: "cn"
+  },
+  yearLabel: {
+    show: false
+  }
+};
 
 export default Vue.extend({
   name: "dashboard",
   props: {},
   data() {
-    return {};
+    return {
+      data: []
+    };
   },
   computed: {},
   mounted: function() {
     let self = this;
+    let myChart = echarts.init(document.getElementById("cal"));
+    // let data = getVirtulData(2019);
 
-    const chart = new G2.Chart({
-      container: "c1", // 指定图表容器 ID
-      forceFit: true, // 指定图表宽度
-      height: 300, // 指定图表高度
+    let detail = echarts.init(document.getElementById("detail"));
+
+    detail.setOption({
+      left: 20,
+      tooltip: {
+        trigger: "axis"
+      },
+      xAxis: {
+        type: "category",
+        data: (() => {
+          let res = [];
+          for (var val, i = 0; i < 24; i++) {
+            res.push(i + ":00");
+          }
+          return res;
+        })()
+      },
+      yAxis: {
+        type: "value"
+      },
+      series: [
+        {
+          name: "Step Start",
+          type: "line",
+          step: "start",
+          data: [120, 132, 101, 134, 90, 230, 210]
+        }
+      ]
     });
-    // Step 2: 载入数据源
-    chart.source(data);
-    // Step 3：创建图形语法，绘制柱状图，由 genre 和 sold 两个属性决定图形位置，genre 映射至 x 轴，sold 映射至 y 轴
-    chart
-      .interval()
-      .position("genre*sold")
-      .color("genre");
-    // Step 4: 渲染图表
-    chart.render();
+
+    myChart.on("click", function(params: any) {
+      // 控制台打印数据的名称
+      console.log(params);
+    });
+
+    this.axios.get("host/getSshLog", {}).then(res => {
+      if (res.data.flag) {
+        let data = [];
+        for (let item of res.data.message) {
+          data.push([item.ddate, item.times]);
+          if (item.times > visualMap.max) {
+            visualMap.max = item.times;
+          }
+        }
+        var option = {
+          title: {
+            text: "年度登录统计",
+            right: 0
+          },
+          visualMap: visualMap,
+          calendar: calendar,
+          tooltip: {
+            formatter: "{c}"
+          },
+          series: [
+            {
+              type: "heatmap",
+              coordinateSystem: "calendar",
+              data: data
+            },
+            {
+              data: data,
+              symbolSize: (val: String) => {
+                if (val[0] === now) {
+                  return 25;
+                } else {
+                  return 0;
+                }
+              },
+              name: "今天",
+              type: "effectScatter",
+              coordinateSystem: "calendar",
+              showEffectOn: "render",
+              rippleEffect: {
+                brushType: "stroke"
+              },
+              hoverAnimation: true,
+              zlevel: 1
+            }
+          ]
+        };
+        myChart.setOption(option);
+      }
+    });
   },
   methods: {
-    select(value: moment.Moment) {
-      console.log(value);
-    },
-    getListData(value: moment.Moment) {
-      let listData;
-      switch (value.date()) {
-        case 8:
-          listData = ["登入5次", "事故1次", "告警2次"];
-          break;
-        case 10:
-          listData = ["登入15次", "事故12次", "告警22次"];
-          break;
-        case 15:
-          listData = ["登入52次", "事故1次", "告警21次"];
-          break;
-        default:
-      }
-      return listData || [];
-    },
-
-    getMonthData(value: moment.Moment) {
-      if (value.month() === 8) {
-        return 1394;
-      }
-    }
+    // select(value: moment.Moment) {
+    //   console.log(value);
+    // },
+    // getListData(value: moment.Moment) {
+    //   let listData;
+    //   switch (value.date()) {
+    //     case 8:
+    //       listData = ["登入5次", "事故1次", "告警2次"];
+    //       break;
+    //     case 10:
+    //       listData = ["登入15次", "事故12次", "告警22次"];
+    //       break;
+    //     case 15:
+    //       listData = ["登入52次", "事故1次", "告警21次"];
+    //       break;
+    //     default:
+    //   }
+    //   return listData || [];
+    // },
+    // getMonthData(value: moment.Moment) {
+    //   if (value.month() === 8) {
+    //     return 1394;
+    //   }
+    // }
   }
 });
 </script>
