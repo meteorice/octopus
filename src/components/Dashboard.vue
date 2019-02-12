@@ -8,7 +8,7 @@
           </span>
           <div class="info-box-content">
             <span class="info-box-text">SSH会话数量</span>
-            <span class="info-box-number">20</span>
+            <span class="info-box-number">{{sshsession}}</span>
           </div>
           <!-- /.info-box-content -->
         </div>
@@ -21,7 +21,7 @@
           </span>
           <div class="info-box-content">
             <span class="info-box-text">HOST数量</span>
-            <span class="info-box-number">100</span>
+            <span class="info-box-number">{{hostcount}}</span>
           </div>
           <!-- /.info-box-content -->
         </div>
@@ -40,13 +40,14 @@
     </a-row>
   </div>
 </template>
-
 <script lang="ts">
 import Vue from "vue";
+import { AxiosInstance } from "axios";
 import moment from "moment";
 import "moment/locale/zh-cn";
 moment.locale("zh-cn");
 import * as Util from "./util";
+import VueAxios from "vue-axios";
 
 let echarts = require("echarts");
 let now = moment().format("YYYY-MM-DD");
@@ -80,53 +81,70 @@ let calendar = {
   }
 };
 
+function showdetail(date: String, chart: any, axios: AxiosInstance) {
+  axios.get("host/getSshLogDetail", { params: { date: date } }).then(res => {
+    if (res.data.flag) {
+      let data: any[] = res.data.message;
+      chart.setOption({
+        left: 20,
+        tooltip: {
+          trigger: "axis"
+        },
+        xAxis: {
+          type: "category",
+          data: (() => {
+            let res = [];
+            for (var val, i = 0; i < 24; i++) {
+              res.push(i + ":00");
+            }
+            return res;
+          })()
+        },
+        yAxis: {
+          type: "value"
+        },
+        series: [
+          {
+            name: "登入次数",
+            type: "line",
+            step: "end",
+            data: data
+          }
+        ]
+      });
+    }
+  });
+}
+
 export default Vue.extend({
   name: "dashboard",
   props: {},
   data() {
     return {
-      data: []
+      sshsession: 0,
+      hostcount: 0
     };
   },
   computed: {},
   mounted: function() {
     let self = this;
+
+    this.axios.get("dashboard/getDashboard", {}).then(res => {
+      if (res.data.flag) {
+        self.sshsession = res.data.message.sshsession;
+        self.hostcount = res.data.message.hostcount;
+      }
+    });
+
     let myChart = echarts.init(document.getElementById("cal"));
     // let data = getVirtulData(2019);
 
     let detail = echarts.init(document.getElementById("detail"));
-
-    detail.setOption({
-      left: 20,
-      tooltip: {
-        trigger: "axis"
-      },
-      xAxis: {
-        type: "category",
-        data: (() => {
-          let res = [];
-          for (var val, i = 0; i < 24; i++) {
-            res.push(i + ":00");
-          }
-          return res;
-        })()
-      },
-      yAxis: {
-        type: "value"
-      },
-      series: [
-        {
-          name: "Step Start",
-          type: "line",
-          step: "start",
-          data: [120, 132, 101, 134, 90, 230, 210]
-        }
-      ]
-    });
-
+    showdetail(now, detail, this.axios);
     myChart.on("click", function(params: any) {
       // 控制台打印数据的名称
-      console.log(params);
+      console.log(params.data[0]);
+      showdetail(params.data[0], detail, self.axios);
     });
 
     this.axios.get("host/getSshLog", {}).then(res => {
