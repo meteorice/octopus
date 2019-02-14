@@ -1,4 +1,10 @@
 # octopus
+### How it works
+```
++---------+     http     +--------+    ssh    +-------+
+| browser | <==========> | webssh | <=======> | linux |
++---------+   websocket  +--------+    ssh    +-------+
+```
 
 ## Project setup
 ```
