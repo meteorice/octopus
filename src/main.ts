@@ -13,7 +13,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 import 'ant-design-vue/dist/antd.less'
 
-library.add(fa.faTerminal, fa.faHeartbeat,fa.faLaptop)
+library.add(fa.faTerminal, fa.faHeartbeat, fa.faLaptop, fa.faExchangeAlt, fa.faShoePrints)
 Vue.component('font-awesome-icon', FontAwesomeIcon)
 
 Vue.config.productionTip = false

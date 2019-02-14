@@ -1,7 +1,7 @@
 <template>
   <div id="dashboard">
     <a-row>
-      <a-col :span="12">
+      <a-col :span="8">
         <div class="info-box">
           <span class="info-box-icon bg-info elevation-1">
             <font-awesome-icon icon="heartbeat" :style="{ color: '#dc3545' }"/>
@@ -14,7 +14,20 @@
         </div>
         <!-- /.info-box -->
       </a-col>
-      <a-col :span="12">
+			<a-col :span="8">
+        <div class="info-box">
+          <span class="info-box-icon bg-info elevation-1">
+            <font-awesome-icon icon="exchange-alt" :style="{ color: '#00CC99' }"/>
+          </span>
+          <div class="info-box-content">
+            <span class="info-box-text">ws会话数量</span>
+            <span class="info-box-number">{{wssession}}</span>
+          </div>
+          <!-- /.info-box-content -->
+        </div>
+        <!-- /.info-box -->
+      </a-col>
+      <a-col :span="8">
         <div class="info-box">
           <span class="info-box-icon bg-info elevation-1">
             <font-awesome-icon icon="laptop" :style="{ color: '#17a2b8' }"/>
@@ -59,7 +72,7 @@ let visualMap = {
   left: "left",
   top: 0,
   min: 0,
-  max: 100,
+  max: 20,
   inRange: {
     color: ["#ADE0FF", "#0150B3"]
   }
@@ -121,7 +134,8 @@ export default Vue.extend({
   props: {},
   data() {
     return {
-      sshsession: 0,
+			sshsession: 0,
+			wssession: 0,
       hostcount: 0
     };
   },
@@ -132,7 +146,8 @@ export default Vue.extend({
     this.axios.get("dashboard/getDashboard", {}).then(res => {
       if (res.data.flag) {
         self.sshsession = res.data.message.sshsession;
-        self.hostcount = res.data.message.hostcount;
+				self.hostcount = res.data.message.hostcount;
+				self.wssession = res.data.message.wssession;
       }
     });
 
