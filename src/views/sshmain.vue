@@ -47,6 +47,7 @@
       :okText="okText"
       :okType="okType"
       cancelText="取消"
+      @cancel="cancel"
       @ok="handleOk"
       :confirmLoading="confirmLoading"
     >
@@ -76,6 +77,7 @@ export default {
       okText: "OK",
       okType: "primary",
       timeout: 5000,
+      ruleid: -1,
       loginname: "",
       loginpwd: "",
       visible: false,
@@ -124,6 +126,7 @@ export default {
           this.loginpwd = "";
           this.timeout = 5000;
           if (data) {
+            this.ruleid = data.ruleid;
             this.loginname = data.loginname;
             this.loginpwd = data.loginpwd;
             this.timeout = data.timeout;
@@ -135,22 +138,29 @@ export default {
         });
       this.visible = true;
     },
+    cancel(e) {
+      this.visible = false;
+      this.confirmLoading = false;
+      this.ruleid = -1;
+    },
     handleOk(e) {
       this.confirmLoading = true;
       this.axios
-        .get("host/setAuth", {
-          params: {
-            matchstr: this.activeHost.ip,
-            loginname: this.loginname,
-            loginpwd: this.loginpwd,
-            timeout: this.timeout
-          }
+        .post("host/setAuth", {
+          ruleid: this.ruleid,
+          matchstr: this.activeHost.ip,
+          loginname: this.loginname,
+          loginpwd: this.loginpwd,
+          timeout: this.timeout
         })
         .then(res => {
           if (res.data.flag) {
             this.visible = false;
             this.confirmLoading = false;
+            this.ruleid = -1;
+            this.$message.success(res.data.message);
           } else {
+            this.ruleid = -1;
             this.$message.error(res.data.message);
           }
         });
